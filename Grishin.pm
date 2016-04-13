@@ -14,7 +14,9 @@ our @EXPORT = (
     "&create_job",
     "&create_job_dir_nodes_for_job_xml",
     "&find_nodes",
+	"&find_architecture_nodes",
     "&find_job_nodes",
+	"&find_job_asm_nodes",
     "&find_family_nodes",
     "&find_first_node",
     "&find_uids",
@@ -22,13 +24,22 @@ our @EXPORT = (
 	"&find_provisional_domain_nodes",
 	"&find_chain_nodes",
 	"&is_manual_domain_rep",
+	"&is_provisional_domain_rep",
     "&find_domain_nodes",
+	"&find_strict_domain_nodes",
     "&find_domain_parse_nodes",
     "&find_domain_node",
+	"&find_strict_domain_reps",
+	"&find_run_list_summary_nodes",
 	"&find_domain_reps",
+	"&find_pdb_nodes",
     "&find_pf_group_nodes",
+	"&find_h_group_nodes",
+	"&find_f_group_nodes",
+	"&find_x_group_nodes",
     "&find_sequence_nodes",
     "&find_dali_hit_nodes",
+	"&find_hhsearch_hit_nodes",
     "&find_run_list_nodes",
 	"&find_uniprot_nodes",
 	"&get_structure_node",
@@ -36,16 +47,25 @@ our @EXPORT = (
     "&get_short_ecodf_acc",
     "&get_ecodf_family_dir",
     "&get_ids",
+	"&get_uid",
+	"&get_arch_id",
+	"&get_arch_name",
     "&get_pf_id",
+	"&get_x_id",
+	"&get_h_id",
+	"&get_f_id",
 	"&get_chain_id",
 	"&get_pdb_id",
 	"&get_ecodf_acc",
     "&get_pf_id_from_domain_node",
+	"&get_f_id_from_domain_node",
+	"&get_f_node_from_domain_node",
 	"&get_cluster_id",
     "&get_dali_scores",
     "&get_dali_fn",
     "&get_dali_regions",
     "&get_ecodf_id",
+	"&get_job_id",
     "&get_reference",
     "&get_seqid_range",
     "&get_seqid_range_node",
@@ -61,6 +81,35 @@ our @EXPORT = (
     "&get_h_id_from_domain_node",
 	"&get_unp_range",
     "&get_week_label",
+	"&has_previous_ecod_fn",
+	"&has_premerge_ecod_fn",
+	"&has_manual_table_fn",
+	"&has_merge_fn",
+	"&has_previous_ecod_fn",
+	"&has_chainwise_ecod_fn",
+	"&has_ecod_tmp_fn",
+	"&has_ecod_fn",
+	"&has_derived_libraries",
+	"&has_update_hmmer_db",
+	"&get_previous_ecod_fn",
+	"&get_premerge_ecod_fn",
+	"&get_merge_fn",
+	"&get_manual_table_fn",
+	"&get_previous_ecod_fn",
+	"&get_chainwise_ecod_fn",
+	"&get_ecod_tmp_fn",
+	"&get_ecod_fn",
+	"&get_derived_libraries",
+	"&get_update_hmmer_db",
+	"&get_ecod_xml_node",
+	"&get_derived_libraries_node",
+	"&overlaps_cleaned",
+	"&ligands_annotated",
+	"&pfam_clustered",
+	"&version_registered",
+	"&divergence_calculated",
+	"&divergence_repaired",
+	"&representatives_calculated",
     "&hasReps_job_list",
     "&isCoiledCoil",
     "&isPeptide",
@@ -114,6 +163,16 @@ sub get_structure_node {
 	$_[0]->findnodes('./structure')->get_node(1);
 }
 
+sub get_x_id { 
+	$_[0]->findvalue('@x_id');
+}
+sub get_f_id { 
+	$_[0]->findvalue('@f_id');
+}
+sub get_h_id { 
+	$_[0]->findvalue('@h_id');
+}
+
 sub get_pf_id {
     if ( $_[0]->nodeName eq 'domain' ) {
         return get_pf_id_from_domain_node( $_[0] );
@@ -124,6 +183,14 @@ sub get_pf_id {
     else {
         return 0;
     }
+}
+
+sub get_arch_id { 
+	$_[0]->findvalue('@arch_id');
+}
+
+sub get_arch_name { 
+	$_[0]->findvalue('@arch_name');
 }
 
 sub get_weekly_update_dir {
@@ -145,8 +212,10 @@ sub hasReps_job_list {
 sub isClusterRep {
     $_[0]->findvalue(qq{cluster[\@level="$_[1]"]/\@domain_rep}) eq 'true';
 }
+
+
 sub get_cluster_id { 
-	$_[0]->findvalue(qq{cluster[\@level="$_[1]"]/\@id});
+	$_[0]->findvalue(qq{cluster[\@level="$_[1]"][\@method="$_[2]"]/\@id});
 }
 
 sub isPeptide {
@@ -192,21 +261,38 @@ sub dump_node_report {
 }
 
 #find_ = Returns XML::NodeList;
+
+sub find_architecture_nodes { 
+	$_[0]->findnodes('//architecture');	
+}
+
 sub find_chain_nodes  { 
 	$_[0]->findnodes('.//chain');
 }
 
 sub find_domain_reps {
-    my @n = map {$_->parentNode} $_[0]->findnodes(qq{.//domain/cluster[\@level='$_[1]'][\@domain_rep="true"]});
+    my @n = map {$_->parentNode} $_[0]->findnodes(qq{.//domain/cluster[\@level='$_[1]'][\@domain_rep="true"][\@method="$_[2]"]});
+	
 	return XML::LibXML::NodeList->new(@n)->get_nodelist();
+}
+
+sub find_strict_domain_reps { 
+    my @n = map {$_->parentNode} $_[0]->findnodes(qq{./domain/cluster[\@level='$_[1]'][\@domain_rep="true"][\@method="$_[2]"]});
+	
+	return XML::LibXML::NodeList->new(@n)->get_nodelist();
+
 }
 
 sub find_dali_hit_nodes {
     return $_[0]->findnodes('//dali_hits/hit');
 }
 
+sub find_hhsearch_hit_nodes { 
+	return $_[0]->findnodes('//hh_run/hits/hit');
+}
+
 sub find_run_list_nodes {
-    my $path = '//run_list_summary_doc/run_list_summary/run_list';
+    my $path = '//run_list';
     $_[0]->exists($path) ? $_[0]->findnodes($path) : 0;
 }
 
@@ -225,9 +311,27 @@ sub find_first_node {
 sub find_job_nodes {
     $_[0]->findnodes('//job');
 }
+sub find_job_asm_nodes {
+	$_[0]->findnodes('//job_asm');
+}
+
+sub find_pdb_nodes { 
+	$_[0]->findnodes('.//pdb');
+}
 
 sub find_pf_group_nodes {
     $_[0]->findnodes('.//pf_group');
+}
+
+sub find_h_group_nodes { 
+	$_[0]->findnodes('.//h_group');	
+}
+
+sub find_f_group_nodes { 
+	$_[0]->findnodes('.//f_group');
+}
+sub find_x_group_nodes { 
+	$_[0]->findnodes('.//x_group');
 }
 
 sub find_family_nodes {
@@ -236,6 +340,10 @@ sub find_family_nodes {
 
 sub find_domain_nodes {
     $_[0]->findnodes('.//domain');
+}
+
+sub find_strict_domain_nodes { 
+	$_[0]->findnodes('./domain');
 }
 
 sub find_domain_node {
@@ -251,7 +359,11 @@ sub find_provisional_domain_nodes {
 }
 
 sub is_manual_domain_rep { 
-	$_[0]->findvalue('@manual_rep') eq 'true';
+	$_[0]->findvalue('@manual_rep') eq 'true' ? 1 : 0;
+}
+
+sub is_provisional_domain_rep { 
+	$_[0]->findvalue('@provisional_manual_rep') eq 'true' ? 1 : 0;
 }
 
 sub find_sequence_nodes {
@@ -298,6 +410,9 @@ sub get_pdb_chain {
     elsif ( $_[0]->nodeName eq 'job' ) {
         return get_pdb_chain_from_job_node( $_[0] );
     }
+	elsif ( $_[0]->nodeName eq 'job_asm') { 
+		return get_pdb_chain_from_job_asm_node( $_[0] );
+	}
     elsif ( $_[0]->nodeName eq 'pdb_chain' ) {
         return get_pdb_chain_from_pdb_chain_node( $_[0] );
     }
@@ -314,6 +429,13 @@ sub get_pdb_chain_from_job_node {
     my $pdb   = $_[0]->findvalue('query_pdb');
     my $chain = $_[0]->findvalue('query_chain');
     return ( $pdb, $chain );
+}
+
+sub get_pdb_chain_from_job_asm_node { 
+	my $pdb 	= $_[0]->findvalue('query_pdb');
+	my $chains 	= $_[0]->findvalue('query_chains');
+	my @c = split(/\,/, $chains);
+	return ($pdb, \@c);
 }
 
 sub get_pdb_chain_from_pdb_chain_node {
@@ -349,13 +471,28 @@ sub get_pf_id_from_domain_node {
       : $_[0]->parentNode->parentNode->findvalue('@pf_id');
 }
 
+sub get_f_id_from_domain_node { 
+    $_[0]->parentNode->parentNode->nodeName eq 'f_group'
+      ? $_[0]->parentNode->parentNode->findvalue('@f_id')
+      : $_[0]->parentNode->parentNode->parentNode->findvalue('@pf_id');
+}
+
+sub get_f_node_from_domain_node { 
+	$_[0]->parentNode or return 0;
+	$_[0]->nodeName eq 'f_group' ? $_[0] : get_f_node_from_domain_node($_[0]->parentNode);
+}
+
 sub get_h_id_from_domain_node {
 	$_[0]->parentNode or return 0;
-	$_[0]->exists('@h_id') ? $_[0]->findvalue('@h_id') : get_h_id_from_domain_node($_[0]);
+	$_[0]->exists('@h_id') ? $_[0]->findvalue('@h_id') : get_h_id_from_domain_node($_[0]->parentNode);
 }
 
 sub get_ids {
     ( $_[0]->findvalue('@uid'), $_[0]->findvalue('@ecod_domain_id') );
+}
+
+sub get_job_id { 
+	$_[0]->findvalue('@job_id');
 }
 
 sub find_uids {
@@ -427,10 +564,127 @@ sub xml_write {
 }
 
 sub xml_open {
-    open my $xml_fh, "<", $_[0] or die "ERROR! COuld not open $_[0] for reading\n";
+    open my $xml_fh, "<", $_[0] or die "ERROR! Could not open $_[0] for reading\n";
     my $xml_doc = XML::LibXML->load_xml( IO => $xml_fh );
     return $xml_doc;
 }
 
+#from update_ecod.pl
+#_find 
+sub find_run_list_summary_nodes { 
+	$_[0]->findnodes('.//run_list_summary');
+}
+
+#_has
+sub has_premerge_ecod_fn { 
+	$_[0]->exists('ecod_pre_xml');
+}
+
+sub has_manual_table_fn { 
+	$_[0]->exists('manual_table_txt');
+}
+
+sub has_merge_fn { 
+	$_[0]->exists('merge_xml');
+}
+
+sub has_previous_ecod_fn { 
+	$_[0]->exists('ecod_old_xml');
+}
+
+sub has_chainwise_ecod_fn {
+	$_[0]->exists('chainwise_ecod_xml');
+}
+
+sub has_ecod_tmp_fn { 
+	$_[0]->exists('ecod_tmp_xml');
+}
+
+sub has_ecod_fn { 
+	$_[0]->exists('ecod_xml');
+}
+
+sub has_derived_libraries { 
+	$_[0]->exists('derived_libraries');	
+}
+sub has_update_hmmer_db { 
+	$_[0]->exists('update_hmmer_db');
+}
+
+#_get
+sub get_premerge_ecod_fn { 
+	$_[0]->findvalue('ecod_pre_xml');
+}
+
+sub get_previous_ecod_fn { 
+	$_[0]->findvalue('ecod_old_xml');
+}
+
+sub get_manual_table_fn { 
+	$_[0]->findvalue('manual_table_txt');
+}
+sub get_merge_fn { 
+	$_[0]->findvalue('merge_xml');
+}
+
+sub get_ecod_tmp_fn { 
+	$_[0]->findvalue('ecod_tmp_xml');
+}
+
+sub get_ecod_fn { 
+	$_[0]->findvalue('ecod_xml');
+}
+
+sub get_chainwise_ecod_fn { 
+	$_[0]->findvalue('chainwise_ecod_xml');
+}
+
+sub get_version { 
+	$_[0]->findvalue('@version');
+}
+
+sub get_update_hmmer_db { 
+	$_[0]->findvalue('update_hmmer_db');
+}
+
+sub get_repair_fn { 
+	($_[0]->findvalue('repair_job_xml_file'), $_[0]->findvalue('repair_job_xml_file/@name'));
+}
+
+sub get_run_list_summary { 
+	$_[0]->findvalue('domain_summary_file');
+}
+
+
+#_get_node
+sub get_ecod_xml_node { 
+	$_[0]->findnodes('ecod_xml')->get_node(1);
+}
+
+sub get_derived_libraries_node { 
+	$_[0]->findnodes('derived_libraries')->get_node(1);
+}
+
+sub overlaps_cleaned { 
+	$_[0]->findvalue('@overlaps_cleaned') eq 'true';
+}
+sub ligands_annotated { 
+	$_[0]->findvalue('@ligands_annotated') eq 'true';
+}
+sub pfam_clustered { 
+	$_[0]->findvalue('@pfam_clustered') eq 'true';
+}
+sub version_registered { 
+	$_[0]->findvalue('@version_registered') eq 'true';
+}
+sub divergence_calculated { 
+	$_[0]->findvalue('@divergence_calculated') eq 'true';
+}
+sub divergence_repaired { 
+	$_[0]->findvalue('@divergence_repaired') eq 'true';
+}
+sub representatives_calculated { 
+	$_[0]->findvalue('@representatives_calculated') eq 'true';
+}
 
 
