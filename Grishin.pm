@@ -26,6 +26,7 @@ our @EXPORT = (
 	"&is_manual_domain_rep",
 	"&is_provisional_domain_rep",
     "&find_domain_nodes",
+	"&find_domain_assembly_nodes",
 	"&find_strict_domain_nodes",
     "&find_domain_parse_nodes",
     "&find_domain_node",
@@ -42,12 +43,15 @@ our @EXPORT = (
 	"&find_hhsearch_hit_nodes",
     "&find_run_list_nodes",
 	"&find_uniprot_nodes",
+	"&get_arch_ordinal",
 	"&get_structure_node",
     "&get_ecodf_acc",
     "&get_short_ecodf_acc",
     "&get_ecodf_family_dir",
     "&get_ids",
+	"&get_id",
 	"&get_uid",
+	"&get_ecod_domain_id",
 	"&get_arch_id",
 	"&get_arch_name",
     "&get_pf_id",
@@ -81,6 +85,8 @@ our @EXPORT = (
     "&get_h_id_from_domain_node",
 	"&get_unp_range",
     "&get_week_label",
+	"&has_arch_comment",
+	"&has_ligand_annotation",
 	"&has_previous_ecod_fn",
 	"&has_premerge_ecod_fn",
 	"&has_manual_table_fn",
@@ -110,10 +116,11 @@ our @EXPORT = (
 	"&divergence_calculated",
 	"&divergence_repaired",
 	"&representatives_calculated",
+	"&statistics_updated",
     "&hasReps_job_list",
     "&isCoiledCoil",
     "&isPeptide",
-    "&isObsolete",
+    "&is_obsolete",
 	"&isRep95",
     "&isClusterRep",
     "&job_node_pdb_chain",
@@ -193,12 +200,35 @@ sub get_arch_name {
 	$_[0]->findvalue('@arch_name');
 }
 
+sub get_arch_ordinal { 
+	$_[0]->findvaluE('@arch_ordinal');
+}
+
 sub get_weekly_update_dir {
     return $_[0]->findvalue('//weekly_update_dir');
 }
 
 sub get_week_label {
     return $_[0]->findvalue('@week_label');
+}
+
+sub has_ligand_annotation { 
+	$_[0]->exists('ligand_str');
+}
+
+sub has_arch_comment { 
+	$_[0]->exists('arch_comment');
+}
+sub has_arch_ordinal { 
+	$_[0]->exists('@arch_ordinal');
+}
+sub has_x_ordinal {
+	$_[0]->existS('@x_ordinal');
+
+}
+
+sub has_name { 
+	$_[0]->exists('@name');
 }
 
 sub hasDomains {
@@ -210,10 +240,13 @@ sub hasReps_job_list {
 }
 
 sub isClusterRep {
+	warn "WARNING! isClusterRep is defunct!\n";
     $_[0]->findvalue(qq{cluster[\@level="$_[1]"]/\@domain_rep}) eq 'true';
 }
 
-
+sub get_name { 
+	$_[0]->findvalue('@name');
+}
 sub get_cluster_id { 
 	$_[0]->findvalue(qq{cluster[\@level="$_[1]"][\@method="$_[2]"]/\@id});
 }
@@ -244,7 +277,7 @@ sub isRep95 {
 	$_[0]->findvalue('@rep95');
 }
 
-sub isObsolete {
+sub is_obsolete {
     if ( $_[0]->nodeName eq 'domain' ) {
         if ( $_[0]->findvalue('structure/@structure_obsolete') eq 'true' ) {
             return 1;
@@ -268,6 +301,10 @@ sub find_architecture_nodes {
 
 sub find_chain_nodes  { 
 	$_[0]->findnodes('.//chain');
+}
+
+sub find_domain_assembly_nodes { 
+	$_[0]->findnodes('domain_assembly');
 }
 
 sub find_domain_reps {
@@ -486,9 +523,13 @@ sub get_h_id_from_domain_node {
 	$_[0]->parentNode or return 0;
 	$_[0]->exists('@h_id') ? $_[0]->findvalue('@h_id') : get_h_id_from_domain_node($_[0]->parentNode);
 }
-
+#Bad naming
 sub get_ids {
     ( $_[0]->findvalue('@uid'), $_[0]->findvalue('@ecod_domain_id') );
+}
+
+sub get_id { 
+	$_[0]->findvalue('@id');
 }
 
 sub get_job_id { 
@@ -520,6 +561,9 @@ sub get_short_ecodf_acc {
 
 sub get_uid {
     $_[0]->findvalue('@uid');
+}
+sub get_ecod_domain_id { 
+	$_[0]->findvalue('@ecod_domain_id');
 }
 
 sub job_node_pdb_chain {
@@ -685,6 +729,9 @@ sub divergence_repaired {
 }
 sub representatives_calculated { 
 	$_[0]->findvalue('@representatives_calculated') eq 'true';
+}
+sub statistics_updated { 
+	$_[0]->findvalue('@stats_updated') eq 'true'
 }
 
 
