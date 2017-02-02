@@ -43,7 +43,9 @@ our @EXPORT = (
 	"&find_hhsearch_hit_nodes",
     "&find_run_list_nodes",
 	"&find_uniprot_nodes",
+	"&get_name",
 	"&get_arch_ordinal",
+	"&get_arch_comment",
 	"&get_structure_node",
     "&get_ecodf_acc",
     "&get_short_ecodf_acc",
@@ -52,12 +54,16 @@ our @EXPORT = (
 	"&get_id",
 	"&get_uid",
 	"&get_ecod_domain_id",
+	"&get_scop_domain_id",
 	"&get_arch_id",
 	"&get_arch_name",
     "&get_pf_id",
 	"&get_x_id",
+	"&get_x_ordinal",
 	"&get_h_id",
+	"&get_h_ordinal",
 	"&get_f_id",
+	"&get_f_ordinal",
 	"&get_chain_id",
 	"&get_pdb_id",
 	"&get_ecodf_acc",
@@ -85,7 +91,18 @@ our @EXPORT = (
     "&get_h_id_from_domain_node",
 	"&get_unp_range",
     "&get_week_label",
+	"&get_version",
+	"&has_arch_name",
+	"&has_arch_id",
+	"&has_x_ordinal",
+	"&has_x_id",
+	"&has_h_ordinal",
+	"&has_h_id",
+	"&has_f_ordinal",
+	"&has_f_id",
+	"&has_name",
 	"&has_arch_comment",
+	"&has_arch_ordinal",
 	"&has_ligand_annotation",
 	"&has_previous_ecod_fn",
 	"&has_premerge_ecod_fn",
@@ -97,11 +114,11 @@ our @EXPORT = (
 	"&has_ecod_fn",
 	"&has_derived_libraries",
 	"&has_update_hmmer_db",
+	"&has_ecod_rep_domain_node",
 	"&get_previous_ecod_fn",
 	"&get_premerge_ecod_fn",
 	"&get_merge_fn",
 	"&get_manual_table_fn",
-	"&get_previous_ecod_fn",
 	"&get_chainwise_ecod_fn",
 	"&get_ecod_tmp_fn",
 	"&get_ecod_fn",
@@ -180,6 +197,15 @@ sub get_h_id {
 	$_[0]->findvalue('@h_id');
 }
 
+sub get_x_ordinal { 
+	$_[0]->findvalue('@x_ordinal');
+}
+sub get_h_ordinal { 
+	$_[0]->findvalue('@h_ordinal');
+}
+sub get_f_ordinal { 
+	$_[0]->findvalue('@f_ordinal');
+}
 sub get_pf_id {
     if ( $_[0]->nodeName eq 'domain' ) {
         return get_pf_id_from_domain_node( $_[0] );
@@ -191,7 +217,6 @@ sub get_pf_id {
         return 0;
     }
 }
-
 sub get_arch_id { 
 	$_[0]->findvalue('@arch_id');
 }
@@ -200,8 +225,12 @@ sub get_arch_name {
 	$_[0]->findvalue('@arch_name');
 }
 
+sub get_arch_comment { 
+	$_[0]->findvalue('arch_comment');
+}
+
 sub get_arch_ordinal { 
-	$_[0]->findvaluE('@arch_ordinal');
+	$_[0]->findvalue('@arch_ordinal');
 }
 
 sub get_weekly_update_dir {
@@ -223,13 +252,27 @@ sub has_arch_ordinal {
 	$_[0]->exists('@arch_ordinal');
 }
 sub has_x_ordinal {
-	$_[0]->existS('@x_ordinal');
-
+	$_[0]->exists('@x_ordinal');
+}
+sub has_h_ordinal { 
+	$_[0]->exists('@h_ordinal');
+}
+sub has_f_ordinal { 
+	$_[0]->exists('@f_ordinal');
+}
+sub has_arch_name { 
+	$_[0]->exists('@arch_name');
+}
+sub has_arch_id { 
+	$_[0]->exists('@arch_id');
 }
 
 sub has_name { 
 	$_[0]->exists('@name');
 }
+
+
+
 
 sub hasDomains {
     return $_[0]->exists('.//domain') ? 1 : 0;
@@ -409,7 +452,8 @@ sub find_sequence_nodes {
 
 #get_ = Returns XML::Node or value
 sub get_chain_id { 
-	$_[0]->findvalue('@chain_id');
+	#$_[0]->findvalue('@chain_id');
+	$_[0]->getAttribute('chain_id');
 }
 sub get_pdb_id { 
 	$_[0]->findvalue('@pdb_id');
@@ -509,9 +553,9 @@ sub get_pf_id_from_domain_node {
 }
 
 sub get_f_id_from_domain_node { 
-    $_[0]->parentNode->parentNode->nodeName eq 'f_group'
-      ? $_[0]->parentNode->parentNode->findvalue('@f_id')
-      : $_[0]->parentNode->parentNode->parentNode->findvalue('@pf_id');
+	$_[0]->nodeName eq 'h_group' and return 0;
+	$_[0]->nodeName eq 'f_group' ? 
+		return $_[0]->findvalue('@f_id') : get_f_id_from_domain_node($_[0]->parentNode);
 }
 
 sub get_f_node_from_domain_node { 
@@ -564,6 +608,9 @@ sub get_uid {
 }
 sub get_ecod_domain_id { 
 	$_[0]->findvalue('@ecod_domain_id');
+}
+sub get_scop_domain_id { 
+	$_[0]->findvalue('@scop_domain_id');
 }
 
 sub job_node_pdb_chain {
@@ -644,6 +691,9 @@ sub has_ecod_tmp_fn {
 	$_[0]->exists('ecod_tmp_xml');
 }
 
+sub has_ecod_rep_domain_node { 
+	$_[0]->exists('ecod_representative_domain');
+}
 sub has_ecod_fn { 
 	$_[0]->exists('ecod_xml');
 }
@@ -663,6 +713,7 @@ sub get_premerge_ecod_fn {
 sub get_previous_ecod_fn { 
 	$_[0]->findvalue('ecod_old_xml');
 }
+
 
 sub get_manual_table_fn { 
 	$_[0]->findvalue('manual_table_txt');
